@@ -1,0 +1,35 @@
+{
+  "name": "gtfs-import",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc -p .",
+    "start": "node ./dist/import.js",
+    "edges": "node ./dist/edges.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "arangojs": "^7.8.0",
+    "axios": "^0.27.2",
+    "csv-parse": "^5.2.0",
+    "gtfs": "^3.4.0",
+    "lodash.groupby": "^4.6.0",
+    "luxon": "^2.4.0",
+    "stream-transform": "^3.1.0",
+    "strip-bom-stream": "^5.0.0",
+    "unzipper": "^0.10.11",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/lodash.groupby": "^4.6.7",
+    "@types/luxon": "^2.3.2",
+    "@types/node": "^18.0.0",
+    "@types/unzipper": "^0.10.5",
+    "@types/uuid": "^8.3.4",
+    "typescript": "^4.7.4"
+  }
+}

@@ -1,9 +1,10 @@
 import { Database } from "arangojs"
 import { CollectionType, DocumentCollection, EdgeCollection } from "arangojs/collection.js"
+const { EDGE_COLLECTION, DOCUMENT_COLLECTION } = CollectionType
 
 export interface Agency {
     _schema?: "agency"
-    _key: string,
+    _key: string
     name: string
     url: string
     timezone: string
@@ -14,7 +15,7 @@ export interface Agency {
 
 export enum Timepoint {
     APPROXIMATE = 0,
-    EXACT = 1
+    EXACT = 1,
 }
 
 export enum LocationType {
@@ -22,7 +23,7 @@ export enum LocationType {
     STATION = 1,
     ENTRANCE_OR_EXIT = 2,
     GENERIC_NODE = 3,
-    BOARDING_AREA = 4
+    BOARDING_AREA = 4,
 }
 
 export enum RouteType {
@@ -70,7 +71,7 @@ export enum RouteType {
 
 export enum DirectionId {
     OUTBOUND = 0,
-    INBOUND = 1
+    INBOUND = 1,
 }
 
 export enum PickupType {
@@ -89,7 +90,7 @@ export enum PickupType {
     /**
      * Must coordinate with driver to arrange pickup.
      */
-    ASK_DRIVER = 3
+    ASK_DRIVER = 3,
 }
 
 export enum ExceptionType {
@@ -100,7 +101,7 @@ export enum ExceptionType {
     /**
      * Service has been removed for the specified date.
      */
-    REMOVED = 2
+    REMOVED = 2,
 }
 
 export enum PathwayMode {
@@ -110,12 +111,12 @@ export enum PathwayMode {
     ESCALATOR = 4,
     ELEVATOR = 5,
     FARE_GATE = 6,
-    EXIT_GATE = 7
+    EXIT_GATE = 7,
 }
 
 export interface StopTime {
     _schema?: "stop_times"
-    _key: string,
+    _key: string
     tripId?: string
     arrivalTime?: string
     departureTime?: string
@@ -157,15 +158,15 @@ export interface Stop {
     lat?: number
     zoneId?: string
     url?: string
-    // /**
-    //  * - null or "0" Stop or Platform
-    //  * - "1" Station
-    //  * - "2" Entrance/Exit
-    //  * - "3" Generic Node
-    //  * - "4" Boarding Area
-    //  */
     // locationType?:  "0" | "1" | "2" | "3" | "4" | null
-    locationType?:  LocationType | null
+    /**
+     * - null or "0" Stop or Platform
+     * - "1" Station
+     * - "2" Entrance/Exit
+     * - "3" Generic Node
+     * - "4" Boarding Area
+     */
+    locationType?: LocationType | null
     parentStation?: string
     timezone?: string
     levelId?: string
@@ -213,14 +214,14 @@ export interface Pathway {
     _key: string
     _from: string
     _to: string
-    mode: PathwayMode,
-    isBidirectionnal: boolean,
-    length?: number,
-    traversalTime?: number,
-    stairCount?: number,
-    maxSlope?: number,
-    minWidth?: number,
-    signpostedAs?: string,
+    mode: PathwayMode
+    isBidirectionnal: boolean
+    length?: number
+    traversalTime?: number
+    stairCount?: number
+    maxSlope?: number
+    minWidth?: number
+    signpostedAs?: string
     reversedSignpostedAs?: string
 }
 export interface Edge {
@@ -235,10 +236,20 @@ export class DocEdgesImport {
     edges: Edge[] = []
 }
 
-export const db = new Database({
-    url: "http://localhost:8529",
-    databaseName: "GTFS"
-})
+const createDb = async (dbName: string) => {
+    const db = new Database({
+        url: "http://localhost:8529",
+    })
+    if (!(await db.database(dbName).exists())) {
+        return db.createDatabase(dbName, [
+            {
+                username: "root",
+            },
+        ])
+    }
+    return db.database(dbName)
+}
+export const db = await createDb("GTFS")
 
 export const agencyCollection = db.collection<Agency>("agency")
 export const tripCollection = db.collection<Trip>("trips")
@@ -256,12 +267,15 @@ export const usesCollection = db.collection<Edge>("uses")
 export const precedesCollection = db.collection<Edge>("precedes")
 export const operatesCollection = db.collection<Edge>("operates")
 export const servesCollection = db.collection<Edge>("serves")
+export const hasRoutesCollection = db.collection<Edge>("has_routes")
 // export const explicitlyServeCollection = db.collection<Edge>("explicitly_serve")
 
-const truncOrCreate = async (col: DocumentCollection & EdgeCollection, type: CollectionType = CollectionType.DOCUMENT_COLLECTION) => {
-    await col.exists() ? await col.truncate() : await col.create({
-        type
-    })
+const truncOrCreate = async (col: DocumentCollection & EdgeCollection, type: CollectionType = DOCUMENT_COLLECTION) => {
+    ;(await col.exists())
+        ? await col.truncate()
+        : await col.create({
+              type,
+          })
 }
 
 export const init = async () => {
@@ -272,22 +286,57 @@ export const init = async () => {
     await truncOrCreate(routesCollection)
     await truncOrCreate(calendarCollection)
     await truncOrCreate(calendarDatesCollection)
-    await truncOrCreate(pathwaysCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(partOfTripCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(partOfStopCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(locatedAtCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(usesCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(precedesCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(operatesCollection, CollectionType.EDGE_COLLECTION)
-    await truncOrCreate(servesCollection, CollectionType.EDGE_COLLECTION)
-    // await truncOrCreate(explicitlyServeCollection, CollectionType.EDGE_COLLECTION)
+    await truncOrCreate(pathwaysCollection, EDGE_COLLECTION)
+    await truncOrCreate(partOfTripCollection, EDGE_COLLECTION)
+    await truncOrCreate(partOfStopCollection, EDGE_COLLECTION)
+    await truncOrCreate(locatedAtCollection, EDGE_COLLECTION)
+    await truncOrCreate(usesCollection, EDGE_COLLECTION)
+    await truncOrCreate(precedesCollection, EDGE_COLLECTION)
+    await truncOrCreate(operatesCollection, EDGE_COLLECTION)
+    await truncOrCreate(servesCollection, EDGE_COLLECTION)
+    await truncOrCreate(hasRoutesCollection, EDGE_COLLECTION)
+    // await truncOrCreate(explicitlyServeCollection, EDGE_COLLECTION)
 
-    await calendarDatesCollection.ensureIndex({ type: "persistent", name: "service", fields: ["serviceId"] })
-    await stopCollection.ensureIndex({ type: "geo", fields: [ "lat", "lon" ] })
-    await calendarCollection.ensureIndex({ type: "persistent", name: "service", fields: ["serviceId"] })
-    await precedesCollection.ensureIndex({ type: "persistent", name: "fromto", fields: ["_from", "_to"], unique: true })
-    await partOfStopCollection.ensureIndex({ type: "persistent", name: "fromto", fields: ["_from", "_to"], unique: true })
-    await operatesCollection.ensureIndex({ type: "persistent", name: "fromto", fields: ["_from", "_to"], unique: true })
-    await servesCollection.ensureIndex({ type: "persistent", name: "fromto", fields: ["_from", "_to"], unique: true })
+    await calendarDatesCollection.ensureIndex({
+        type: "persistent",
+        name: "service",
+        fields: ["serviceId"],
+    })
+    await stopCollection.ensureIndex({ type: "geo", fields: ["lat", "lon"] })
+    await calendarCollection.ensureIndex({
+        type: "persistent",
+        name: "service",
+        fields: ["serviceId"],
+    })
+    await precedesCollection.ensureIndex({
+        type: "persistent",
+        name: "fromto",
+        fields: ["_from", "_to"],
+        unique: true,
+    })
+    await partOfStopCollection.ensureIndex({
+        type: "persistent",
+        name: "fromto",
+        fields: ["_from", "_to"],
+        unique: true,
+    })
+    await operatesCollection.ensureIndex({
+        type: "persistent",
+        name: "fromto",
+        fields: ["_from", "_to"],
+        unique: true,
+    })
+    await servesCollection.ensureIndex({
+        type: "persistent",
+        name: "fromto",
+        fields: ["_from", "_to"],
+        unique: true,
+    })
+    await hasRoutesCollection.ensureIndex({
+        type: "persistent",
+        name: "fromto",
+        fields: ["_from", "_to"],
+        unique: true,
+    })
     // await explicitlyServeCollection.ensureIndex({ type: "persistent", name: "fromto", fields: ["_from", "_to"], unique: true })
 }

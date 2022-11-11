@@ -1,3 +1,3 @@
-import { createEdgesPrecedes } from "./import.js";
+import { createEdgesPrecedes } from "./import.js"
 
 await createEdgesPrecedes()

@@ -1,11 +1,11 @@
 import { aql } from "arangojs"
 import axios from "axios"
 import { createReadStream } from "node:fs"
-import { readdir, writeFile, access, unlink, rm } from 'node:fs/promises'
-import { Extract } from 'unzipper'
-import { parse } from 'csv-parse'
+import { readdir, writeFile, access, unlink, rm } from "node:fs/promises"
+import { Extract } from "unzipper"
+import { parse } from "csv-parse"
 import path from "node:path"
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4 } from "uuid"
 import groupBy from "lodash.groupby"
 import { DateTime } from "luxon"
 import {
@@ -35,7 +35,7 @@ import {
 enum GtfsBool {
     EMPTY = "O",
     YES = "1",
-    NO = "2"
+    NO = "2",
 }
 type NameDefinitions = "agency" | "stop_times" | "trips" | "stops" | "routes" | "calendar" | "calendar_dates" | "pathways"
 class Gtfs {
@@ -45,7 +45,7 @@ class Gtfs {
     edges: Edge[] = []
     constructor(filename: string) {
         this.filename = filename
-        this.name = <NameDefinitions>filename.replace('.txt', '')
+        this.name = <NameDefinitions>filename.replace(".txt", "")
     }
 
     async add(obj: any) {
@@ -61,7 +61,7 @@ class Gtfs {
                     timezone: obj.agency_timezone,
                     lang: obj.agency_lang,
                     phone: obj.agency_phone,
-                    email: obj.agency_email
+                    email: obj.agency_email,
                 }
                 break
             case "stop_times":
@@ -77,17 +77,17 @@ class Gtfs {
                     dropOffType: Number(obj.drop_off_type),
                     localZoneId: obj.local_zone_id,
                     stopHeadsign: obj.stop_headsign,
-                    timepoint: Number(obj.timepoint)
+                    timepoint: Number(obj.timepoint),
                 })
                 this.edges.push({
                     _schema: "part_of_trip",
-                    _from: "stop_times/"+key,
-                    _to: "trips/"+obj.trip_id
+                    _from: "stop_times/" + key,
+                    _to: "trips/" + obj.trip_id,
                 })
                 this.edges.push({
                     _schema: "located_at",
-                    _from: "stop_times/"+key,
-                    _to: "stops/"+obj.stop_id
+                    _from: "stop_times/" + key,
+                    _to: "stops/" + obj.stop_id,
                 })
                 break
             case "trips":
@@ -101,12 +101,12 @@ class Gtfs {
                     blockId: obj.block_id,
                     shapeId: obj.shape_id,
                     wheelchairAccessible: this.getBoolWithEmpty(obj.wheelchair_accessible),
-                    bikesAllowed: this.getBoolWithEmpty(obj.bikes_allowed)
+                    bikesAllowed: this.getBoolWithEmpty(obj.bikes_allowed),
                 })
                 this.edges.push({
                     _schema: "uses",
-                    _from: "trips/"+obj.trip_id,
-                    _to: "routes/"+obj.route_id
+                    _from: "trips/" + obj.trip_id,
+                    _to: "routes/" + obj.route_id,
                 })
                 // this.edges.push({
                 //     _schema: "serves",
@@ -134,13 +134,13 @@ class Gtfs {
                     timezone: obj.stop_timezone,
                     levelId: obj.level_id,
                     wheelchairBoarding: this.getBoolWithEmpty(obj.wheelchair_boarding),
-                    plateformCode: obj.platform_code
+                    plateformCode: obj.platform_code,
                 })
-                if(obj.parent_station && obj.parent_station !== "") {
+                if (obj.parent_station && obj.parent_station !== "") {
                     this.edges.push({
                         _schema: "part_of_stop",
-                        _from: "stops/"+obj.stop_id,
-                        _to: "stops/"+obj.parent_station
+                        _from: "stops/" + obj.stop_id,
+                        _to: "stops/" + obj.parent_station,
                     })
                 }
                 break
@@ -153,14 +153,14 @@ class Gtfs {
                     desc: obj.route_desc,
                     type: Number(obj.route_type),
                     url: obj.route_url,
-                    color: "#"+obj.route_color,
-                    textColor: "#"+obj.route_text_color,
-                    sortOrder: Number(obj.route_sort_order)
+                    color: "#" + obj.route_color,
+                    textColor: "#" + obj.route_text_color,
+                    sortOrder: Number(obj.route_sort_order),
                 })
                 this.edges.push({
                     _schema: "operates",
-                    _from: "agency/"+obj.agency_id,
-                    _to: "routes/"+obj.route_id
+                    _from: "agency/" + obj.agency_id,
+                    _to: "routes/" + obj.route_id,
                 })
                 break
             case "calendar":
@@ -175,7 +175,7 @@ class Gtfs {
                     saturday: this.getBool(obj.saturday),
                     sunday: this.getBool(obj.sunday),
                     startDate: DateTime.fromFormat(obj.start_date, "yyyyMMdd").toISODate(),
-                    endDate: DateTime.fromFormat(obj.end_date, "yyyyMMdd").toISODate()
+                    endDate: DateTime.fromFormat(obj.end_date, "yyyyMMdd").toISODate(),
                 }
                 break
             case "calendar_dates":
@@ -183,15 +183,15 @@ class Gtfs {
                     _schema: this.name,
                     serviceId: obj.service_id,
                     date: DateTime.fromFormat(obj.date, "yyyyMMdd").toISODate(),
-                    exceptionType: Number(obj.exception_type)
+                    exceptionType: Number(obj.exception_type),
                 }
                 break
             case "pathways":
                 schema = {
                     _schema: this.name,
                     _key: obj.pathway_id,
-                    _from: "stops/"+obj.from_stop_id,
-                    _to: "stops/"+obj.to_stop_id,
+                    _from: "stops/" + obj.from_stop_id,
+                    _to: "stops/" + obj.to_stop_id,
                     mode: Number(obj.pathway_mode),
                     isBidirectionnal: this.getBool(obj.is_bidirectional),
                     length: Number(obj.length),
@@ -200,12 +200,13 @@ class Gtfs {
                     maxSlope: Number(obj.max_slope),
                     minWidth: Number(obj.min_width),
                     signpostedAs: obj.signposted_as,
-                    reversedSignpostedAs: obj.reversed_signposted_as
+                    reversedSignpostedAs: obj.reversed_signposted_as,
                 }
                 break
-            default: break
+            default:
+                break
         }
-        if(this.name === "stop_times" || this.name === "trips" || this.name === "stops" || this.name === "routes") {
+        if (this.name === "stop_times" || this.name === "trips" || this.name === "stops" || this.name === "routes") {
             return this.schemaSplice(50000)
         }
         return schema
@@ -220,7 +221,7 @@ class Gtfs {
             case GtfsBool.NO:
                 return false
             default:
-                break;
+                break
         }
     }
     private getBool(o: string) {
@@ -228,19 +229,19 @@ class Gtfs {
     }
 
     private removeEmpty(obj: any) {
-        Object.keys(obj).forEach(key => {
-            if (obj[key] === '') {
-              delete obj[key];
+        Object.keys(obj).forEach((key) => {
+            if (obj[key] === "") {
+                delete obj[key]
             }
         })
         return obj
     }
 
     private async schemaSplice(size: number = 100) {
-        if(this.schemas.length >= size) {
+        if (this.schemas.length >= size) {
             const g = this.schemas.splice(0, size)
             const edges = this.edges.splice(0, size * 2)
-            if(g.length > 0 || edges.length > 0) {
+            if (g.length > 0 || edges.length > 0) {
                 const de = new DocEdgesImport()
                 de.docs = g
                 de.edges = edges
@@ -252,47 +253,54 @@ class Gtfs {
 /**
  * https://prim.iledefrance-mobilites.fr/fr/donnees-statiques/offre-horaires-tc-gtfs-idfm
  */
-const gtfsZipUrl = "https://data.iledefrance-mobilites.fr/explore/dataset/offre-horaires-tc-gtfs-idfm/files/a925e164271e4bca93433756d6a340d1/download/"
+const gtfsZipUrl =
+    "https://data.iledefrance-mobilites.fr/explore/dataset/offre-horaires-tc-gtfs-idfm/files/a925e164271e4bca93433756d6a340d1/download/"
 
 /**
  * path gtfs folder
  */
-const gtfsZipPath = 'gtfs.zip'
-const gtfsPath = 'gtfs'
+const gtfsZipPath = "gtfs.zip"
+const gtfsPath = "gtfs"
 
 const downloadFiles = async (url: string, filePath: string) => {
     console.log(`Downloading GTFS from ${url}`)
-    const response = await axios(url, {responseType: "arraybuffer"})
+    const response = await axios(url, { responseType: "arraybuffer" })
 
     if (response.status !== 200) {
-        throw new Error('Couldn’t download files')
+        throw new Error("Couldn’t download files")
     }
 
     const buffer = Buffer.from(response.data)
 
     await writeFile(filePath, buffer)
-    console.log('Download successful')
+    console.log("Download successful")
 }
 
 const importDocsWithEdges = async (gtfsName: NameDefinitions, edges: Edge[], docs: Schema[]) => {
-    const e = groupBy(edges, '_schema')
-    if(gtfsName === "stop_times") {
+    const e = groupBy(edges, "_schema")
+    if (gtfsName === "stop_times") {
         await stopTimesCollection.import(<StopTime[]>docs)
-        await partOfTripCollection.import(e["part_of_trip"].map(v => ({
-            _from: v._from,
-            _to: v._to
-        })))
-        await locatedAtCollection.import(e["located_at"].map(v => ({
-            _from: v._from,
-            _to: v._to
-        })))
+        await partOfTripCollection.import(
+            e["part_of_trip"].map((v) => ({
+                _from: v._from,
+                _to: v._to,
+            }))
+        )
+        await locatedAtCollection.import(
+            e["located_at"].map((v) => ({
+                _from: v._from,
+                _to: v._to,
+            }))
+        )
     }
-    if(gtfsName === "trips") {
+    if (gtfsName === "trips") {
         await tripCollection.import(<Trip[]>docs)
-        await usesCollection.import(e["uses"].map(v => ({
-            _from: v._from,
-            _to: v._to
-        })))
+        await usesCollection.import(
+            e["uses"].map((v) => ({
+                _from: v._from,
+                _to: v._to,
+            }))
+        )
         // await servesCollection.import(e["serves"].map(v => ({
         //     _from: v._from,
         //     _to: v._to
@@ -302,19 +310,23 @@ const importDocsWithEdges = async (gtfsName: NameDefinitions, edges: Edge[], doc
         //     _to: v._to
         // })))
     }
-    if(gtfsName === "stops") {
+    if (gtfsName === "stops") {
         await stopCollection.import(<Stop[]>docs)
-        await partOfStopCollection.import(e["part_of_stop"].map(v => ({
-            _from: v._from,
-            _to: v._to
-        })))
+        await partOfStopCollection.import(
+            e["part_of_stop"].map((v) => ({
+                _from: v._from,
+                _to: v._to,
+            }))
+        )
     }
-    if(gtfsName === "routes") {
+    if (gtfsName === "routes") {
         await routesCollection.import(<Route[]>docs)
-        await operatesCollection.import(e["operates"].map(v => ({
-            _from: v._from,
-            _to: v._to
-        })))
+        await operatesCollection.import(
+            e["operates"].map((v) => ({
+                _from: v._from,
+                _to: v._to,
+            }))
+        )
     }
 }
 
@@ -322,7 +334,7 @@ class GtfsFiles {
     files: Map<NameDefinitions, boolean> = new Map()
 
     setIsOpen(name: NameDefinitions, isOpen: boolean) {
-        if(!isOpen) {
+        if (!isOpen) {
             this.files.delete(name)
             return
         }
@@ -336,7 +348,7 @@ const readFiles = async (filePath: string) => {
     const gtfsFiles = new GtfsFiles()
     for (const textFile of textFiles) {
         const gtfs = new Gtfs(textFile)
-        const filepath = path.join(filePath,`${textFile}`);
+        const filepath = path.join(filePath, `${textFile}`)
         const parser = parse({
             columns: true,
             bom: true,
@@ -345,15 +357,16 @@ const readFiles = async (filePath: string) => {
             skipEmptyLines: true,
         })
         parser.on("readable", async () => {
-            let record; while ((record = parser.read()) !== null) {
+            let record
+            while ((record = parser.read()) !== null) {
                 // Work with each record
                 const data = await gtfs.add(record)
-                if(data instanceof DocEdgesImport) {
+                if (data instanceof DocEdgesImport) {
                     console.log(gtfs.name, data.docs.length, data.edges.length)
                     await importDocsWithEdges(gtfs.name, data.edges, data.docs)
                     continue
                 }
-                if(data) {
+                if (data) {
                     const schema = data._schema
                     delete data._schema
                     switch (schema) {
@@ -369,7 +382,8 @@ const readFiles = async (filePath: string) => {
                         case "pathways":
                             await pathwaysCollection.save(data)
                             break
-                        default: break
+                        default:
+                            break
                     }
                 }
             }
@@ -378,19 +392,22 @@ const readFiles = async (filePath: string) => {
             console.log(gtfs.name)
             await importDocsWithEdges(gtfs.name, gtfs.edges, gtfs.schemas)
         })
-        
+
         gtfsFiles.setIsOpen(gtfs.name, true)
         const stream = createReadStream(filepath).pipe(parser)
         stream.on("close", async () => {
             gtfsFiles.setIsOpen(gtfs.name, false)
-            if(gtfs.name === "stop_times") {
+            if (gtfs.name === "stop_times") {
                 await createEdgesPrecedes()
             }
-            if(gtfs.name === "calendar" && !gtfsFiles.files.has("trips")) {
+            if (gtfs.name === "calendar" && !gtfsFiles.files.has("trips")) {
                 await createEdgesServes()
             }
-            if(gtfs.name === "trips" && !gtfsFiles.files.has("agency")) {
+            if (gtfs.name === "trips" && !gtfsFiles.files.has("agency")) {
                 await createEdgesServes()
+            }
+            if ((gtfs.name === "routes" || gtfs.name === "stops") && !(gtfsFiles.files.has("stops") || gtfsFiles.files.has("routes"))) {
+                await createEdgesHasRoute()
             }
         })
     }
@@ -399,13 +416,16 @@ const readFiles = async (filePath: string) => {
 export const createEdgesPrecedes = async () => {
     console.log("edge precedes")
     try {
-        await db.query(aql`
+        await db.query(
+            aql`
         for t in trips
         for s1 in 1 inbound t._id part_of_trip
         for s2 in 1 inbound concat("trips/",s1.tripId) part_of_trip
             filter s2.stopSequence == s1.stopSequence+1
             insert { _from: s1._id, _to: s2._id } into precedes options { ignoreErrors: true }
-        `, { intermediateCommitCount: 100000 })
+        `,
+            { intermediateCommitCount: 100_000 }
+        )
     } catch (error: any) {
         console.log(error.message)
     }
@@ -420,12 +440,36 @@ export const createEdgesPrecedes = async () => {
 export const createEdgesServes = async () => {
     console.log("edge serves")
     try {
-        await db.query(aql`
+        await db.query(
+            aql`
         for c in calendar
         for t in trips
             filter t.serviceId == c.serviceId
             insert { _from: c._id, _to: t._id } into serves options { ignoreErrors: true }
-        `, { intermediateCommitCount: 100000 })
+        `,
+            { intermediateCommitCount: 100000 }
+        )
+    } catch (error: any) {
+        console.log(error.message)
+    }
+}
+
+export const createEdgesHasRoute = async () => {
+    console.log("edge has routes")
+    try {
+        await db.query(
+            aql`
+        for loc in stops
+            let routes = unique(
+                for v, e, p in 3 inbound loc._id located_at, outbound part_of_trip, outbound uses
+                    let route = p.vertices[3]
+                    return route
+            )
+            for r in routes
+                insert { _from: loc._id, _to: r._id } into has_routes options { ignoreErrors: true }
+        `,
+            { intermediateCommitCount: 100000 }
+        )
     } catch (error: any) {
         console.log(error.message)
     }
@@ -447,12 +491,12 @@ export async function exist(filePath: string) {
 
 /**
  * get texts files in gtfs folder
- * @param folderPath 
- * @returns 
+ * @param folderPath
+ * @returns
  */
 export async function getTextFiles(folderPath: string) {
     const files = await readdir(folderPath)
-    return files.filter((filename) => filename.slice(-3) === 'txt')
+    return files.filter((filename) => filename.slice(-3) === "txt")
 }
 
 /*
@@ -460,18 +504,18 @@ export async function getTextFiles(folderPath: string) {
  */
 export function unzip(zipfilePath: string, exportPath: string) {
     return createReadStream(zipfilePath)
-      .pipe(Extract({ path: exportPath }))
-      .on('entry', (entry) => entry.autodrain())
-      .promise()
+        .pipe(Extract({ path: exportPath }))
+        .on("entry", (entry) => entry.autodrain())
+        .promise()
 }
 
-if (!await exist(gtfsZipPath)){
+if (!(await exist(gtfsZipPath))) {
     await downloadFiles(gtfsZipUrl, gtfsZipPath)
 }
-if (!await exist(gtfsPath)){
+if (!(await exist(gtfsPath))) {
     await unzip(gtfsZipPath, gtfsPath)
 }
 await unlink(gtfsZipPath)
 await init()
 await readFiles(gtfsPath)
-await rm(gtfsPath, {recursive: true, force: true})
+await rm(gtfsPath, { recursive: true, force: true })

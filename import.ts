@@ -1,7 +1,7 @@
 import { aql } from "arangojs"
 import axios from "axios"
 import { createReadStream } from "node:fs"
-import { readdir, writeFile, access, unlink, rm } from "node:fs/promises"
+import { readdir, writeFile, access, unlink, rm, rmdir } from "node:fs/promises"
 import { Extract } from "unzipper"
 import { parse } from "csv-parse"
 import path from "node:path"
@@ -406,7 +406,7 @@ const readFiles = async (filePath: string) => {
             if (gtfs.name === "trips" && !gtfsFiles.files.has("agency")) {
                 await createEdgesServes()
             }
-            if ((gtfs.name === "routes" || gtfs.name === "stops") && !(gtfsFiles.files.has("stops") || gtfsFiles.files.has("routes"))) {
+            if (gtfsFiles.files.size === 0) {
                 await createEdgesHasRoute()
             }
         })
@@ -508,14 +508,14 @@ export function unzip(zipfilePath: string, exportPath: string) {
         .on("entry", (entry) => entry.autodrain())
         .promise()
 }
-
-if (!(await exist(gtfsZipPath))) {
-    await downloadFiles(gtfsZipUrl, gtfsZipPath)
-}
 if (!(await exist(gtfsPath))) {
+    if (!(await exist(gtfsZipPath))) {
+        await downloadFiles(gtfsZipUrl, gtfsZipPath)
+    }
     await unzip(gtfsZipPath, gtfsPath)
+    await unlink(gtfsZipPath)
 }
-await unlink(gtfsZipPath)
 await init()
 await readFiles(gtfsPath)
-await rm(gtfsPath, { recursive: true, force: true })
+// await rm(gtfsPath, { recursive: true, force: true })
+await rmdir(gtfsPath, { recursive: true })

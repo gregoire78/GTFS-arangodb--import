@@ -5,12 +5,15 @@ services:
     image: arangodb:3.10
     ports:
       - "8529:8529"
-    # command: ["arangod", "--query.memory-limit", "300", "--cache.size", "1048576", "--rocksdb.block-cache-size", "1048576", "--rocksdb.enforce-block-cache-size-limit", "false", "--database.auto-upgrade"]
+    #command: ["arangod", "--query.memory-limit", "300", "--cache.size", "1048576", "--rocksdb.block-cache-size", "1048576", "--rocksdb.enforce-block-cache-size-limit", "false", "--database.auto-upgrade"]
+    #command: ["arangod", "--query.memory-limit", "300", "--cache.size", "1048576", "--rocksdb.block-cache-size", "1048576", "--rocksdb.enforce-block-cache-size-limit", "false"]
     command: ["arangod"]
     volumes:
-      - arangodbdata:/var/lib/arangodb3
+      - arangodbdata-bzh:/var/lib/arangodb3
+      #- arangodbdata:/var/lib/arangodb3
     environment:
       - ARANGO_NO_AUTH=1
     network_mode: bridge
 volumes:
   arangodbdata:
+  arangodbdata-bzh:

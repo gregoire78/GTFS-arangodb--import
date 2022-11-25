@@ -225,7 +225,7 @@ export interface Pathway {
     reversedSignpostedAs?: string
 }
 export interface Edge {
-    _schema?: "part_of_trip" | "located_at" | "uses" | "part_of_stop" | "operates" | "serves" | "explicitly_serve"
+    _schema?: "part_of_trip" | "located_at" | "uses" | "part_of_stop" | "operates" | "serves" | "explicitly_serve" | "has_routes"
     _from: string
     _to: string
 }
